@@ -12,15 +12,26 @@ class YandexTurboPages{
     ];
 
     private $cacheDir;
+    private $cacheFileName = 'yandexTurboPages.xml';
+    private $contentField = 'content';
+    /**
+     * [ ['text'=>'', 'link'=>'']]
+     * @var array
+     */
+    private $turboMenu = [];
 
     public function getRss(){
 
         $rssText = $this->generate();
 
-
+        return $rssText;
     }
 
     public function generate(){
+
+        if($cacheText = $this->getCache()){
+            return $cacheText;
+        }
 
 
         $resultText = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -35,9 +46,49 @@ class YandexTurboPages{
 
         $resultText .= ReketakaHelps::endTag('rss');
 
-        echo $resultText.PHP_EOL;
+        $this->saveCache($resultText);
+
+        return $resultText;
     }
 
+    /**
+     * Удаляет всю папку с кешем
+     */
+    public function clearCache(){
+
+    }
+
+    /**
+     * Сохраняет кеш
+     * @param $text
+     * @return bool
+     */
+    private function saveCache($text){
+        $file = $this->cacheDir.'/'.$this->cacheFileName;
+
+        file_put_contents($file, $text);
+        return true;
+    }
+
+    /**
+     * Возвращает кеш если он существует
+     * @return bool|false|string
+     */
+    private function getCache(){
+        $file = $this->cacheDir.'/'.$this->cacheFileName;
+
+        if(!file_exists($file)){
+            return false;
+        }
+
+        return file_get_contents($file);
+    }
+
+    /**
+     * Устанавливает информации о канале
+     * @param $d
+     * @return $this
+     */
     public function setChannelData($d){
         $keys = array_keys($this->channelData);
 
@@ -52,6 +103,21 @@ class YandexTurboPages{
         return $this;
     }
 
+    /**
+     * Указывает из какого поля брать описание страницы для турбо страницы
+     * @param $fieldName
+     * @return $this
+     */
+    public function setFieldContent($fieldName){
+        $this->contentField = $fieldName;
+        return $this;
+    }
+
+    /**
+     * Назначает директорию для кеша
+     * @param $dir
+     * @return $this
+     */
     public function setCacheDir($dir){
         $this->cacheDir = $dir;
 
@@ -79,27 +145,40 @@ class YandexTurboPages{
 
     private function generateContentItem($item = false){
 
-        $r = '...
-    <header>
-        <h1>Заголовок страницы</h1>
-        <figure>
-            <img src="http://example.com/img.jpg"/>
-        </figure>
-        <h2>Заголовок второго уровня</h2>
-        <menu>
-            <a href="http://labmagic.ru">Текст ссылки</a>
-            <a href="http://labmagic.ru">Текст ссылки</a>
-        </menu>
-    </header>
-    <!-- Контентная часть -->
-...';
+        $r = ReketakaHelps::beginTag('header');
+        $r .= ReketakaHelps::tag('h1', 'Заголовок страницы');
+
+        $r .= ReketakaHelps::beginTag('figure');
+        $r .= ReketakaHelps::tag('img', null, ['src'=>'http://example.com/img.jpg']);
+        $r .= ReketakaHelps::endTag('figure');
+
+        $r .= ReketakaHelps::endTag('header');
+
+        $r .= $this->generateMenu();
+
+        $r .= ReketakaHelps::endTag('header');
+
         $r .= 'Конент';
 
         return $r;
-
-
     }
 
+    /**
+     * Формирует меню если оно заданно
+     * @return null
+     */
+    private function generateMenu(){
+        if(!$this->turboMenu){
+            return null;
+        }
+
+        $r = ReketakaHelps::beginTag('menu');
+        foreach($this->turboMenu as $d){
+            $r .= ReketakaHelps::tag('a', $d['text'], ['href'=>$d['link']]);
+        }
+        $r .= ReketakaHelps::endTag('menu');
+
+    }
 
     public function generateItems(){
 
@@ -119,6 +198,17 @@ class YandexTurboPages{
 
         return $r;
     }
+
+    /**
+     * Устанавливает меню
+     * @param $menuData
+     * @return $this
+     */
+    public function setMenu($menuData){
+        $this->turboMenu = $menuData;
+
+        return $this;
+    }
 }
 
 
@@ -130,7 +220,12 @@ $ytp = (new YandexTurboPages())
         'link'=>'http://labmagic.ru',
         'description'=>'Описание сайта'
     ])
-    ->setCacheDir(__DIR__);
+    ->setCacheDir(__DIR__)
+    ->setFieldContent('content')
+    ->setMenu([
+        ['text'=>'Пункт меню первый', 'link'=>'#'],
+        ['text'=>'Пунтк меню второй', 'link'=>'#'],
+    ]);
 
 
-$ytp->getRss();
+echo $ytp->getRss();
