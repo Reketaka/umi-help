@@ -1,6 +1,6 @@
 <?php
 
-include_once "./ReketakaHelps.php";
+include_once "./Rh.php";
 
 class YandexTurboPages{
 
@@ -11,9 +11,11 @@ class YandexTurboPages{
         'language'=>'ru'
     ];
 
+    private $items;
     private $cacheDir;
     private $cacheFileName = 'yandexTurboPages.xml';
     private $contentField = 'content';
+    private $callbackToGenerateContent = null;
     /**
      * [ ['text'=>'', 'link'=>'']]
      * @var array
@@ -143,10 +145,10 @@ class YandexTurboPages{
         return $r;
     }
 
-    private function generateContentItem($item = false){
+    private function generateContentItem($item){
 
         $r = Rh::beginTag('header');
-        $r .= Rh::tag('h1', 'Заголовок страницы');
+        $r .= Rh::tag('h1', $item->h1);
 
         $r .= Rh::beginTag('figure');
         $r .= Rh::tag('img', null, ['src'=>'http://example.com/img.jpg']);
@@ -158,7 +160,12 @@ class YandexTurboPages{
 
         $r .= Rh::endTag('header');
 
-        $r .= 'Конент';
+        if($this->callbackToGenerateContent instanceof \Closure) {
+            $func = $this->callbackToGenerateContent;
+            $r .= $func($item);
+        }else {
+            $r .= $item->content;
+        }
 
         return $r;
     }
@@ -184,17 +191,18 @@ class YandexTurboPages{
 
         $r = null;
 
+        foreach($this->items as $item) {
 
+            $r .= Rh::beginTag('item', ['turbo' => 'true']);
 
-        $r .= Rh::beginTag('item', ['turbo'=>'true']);
+            $r .= Rh::tag('link', $item->link);
 
-        $r .= Rh::tag('link', 'http://labmagic.ru');
+            $r .= Rh::beginTag('turbo:content');
+            $r .= $this->generateContentItem($item);
+            $r .= Rh::endTag('turbo:content');
 
-        $r .= Rh::beginTag('turbo:content');
-        $r .= $this->generateContentItem();
-        $r .= Rh::endTag('turbo:content');
-
-        $r .= Rh::endTag('item');
+            $r .= Rh::endTag('item');
+        }
 
         return $r;
     }
@@ -209,6 +217,21 @@ class YandexTurboPages{
 
         return $this;
     }
+
+    /**
+     * Устанавливает массив моделей для использования в тубространицах
+     * @param $items
+     * @return $this
+     */
+    public function setItems($items){
+        $this->items = $items;
+        return $this;
+    }
+
+    public function setContentGenerateCallback($callback){
+        $this->callbackToGenerateContent = $callback;
+        return $this;
+    }
 }
 
 
@@ -216,8 +239,8 @@ class YandexTurboPages{
 
 $ytp = (new YandexTurboPages())
     ->setChannelData([
-        'title'=>'Лабмаджик',
-        'link'=>'http://labmagic.ru',
+        'title'=>'Title сайта',
+        'link'=>'http://example.ru',
         'description'=>'Описание сайта'
     ])
     ->setCacheDir(__DIR__)
@@ -225,7 +248,15 @@ $ytp = (new YandexTurboPages())
     ->setMenu([
         ['text'=>'Пункт меню первый', 'link'=>'#'],
         ['text'=>'Пунтк меню второй', 'link'=>'#'],
-    ]);
+    ])
+    ->setItems([
+        (object)['content'=>'Текст страницы', 'h1'=>'Заголовок страницы', 'link'=>'http://example.ru/page.html']
+    ])
+    ->setContentGenerateCallback(function($item){
+
+
+        return "TEST CONTENT";
+    });
 
 
 echo $ytp->getRss();
