@@ -1,7 +1,5 @@
 <?php
 
-include_once "./Rh.php";
-
 class YandexTurboPages{
 
     private $channelData = [
@@ -11,9 +9,11 @@ class YandexTurboPages{
         'language'=>'ru'
     ];
 
+    private $domainUrl;
     private $items;
-    private $cacheDir;
-    private $cacheFileName = 'yandexTurboPages.xml';
+    public $cacheDir = '/sys-temp/yandexTurboPages/';
+    public $cacheFileName = 'page.xml';
+    public $cacheClearTime = 3600;
     private $contentField = 'content';
     private $callbackToGenerateContent = null;
     /**
@@ -21,6 +21,28 @@ class YandexTurboPages{
      * @var array
      */
     private $turboMenu = [];
+
+    /**
+     * Устанавливает дефолтные значения канала домена и т.д.
+     * @return $this
+     */
+    public function loadDefaultValues(){
+        $domain = domainsCollection::getInstance()->getDefaultDomain();
+
+        $this->domainUrl = ($domain->isUsingSsl()?'https://':'http://').$domain->getHost();
+
+        $defaultPage = umiHierarchy::getInstance()->getDefaultElement();
+
+        $this->channelData = [
+            'title'=>$defaultPage->getValue('title'),
+            'link'=>$this->domainUrl,
+            'description'=>$defaultPage->getValue('meta_descriptions')
+        ];
+
+        //$this->cacheDir = '/sys-temp/yandexTurboPages/';
+
+        return $this;
+    }
 
     public function getRss(){
 
@@ -31,7 +53,7 @@ class YandexTurboPages{
 
     public function generate(){
 
-        if($cacheText = $this->getCache()){
+        if($this->cacheDir && ($cacheText = $this->getCache())){
             return $cacheText;
         }
 
@@ -48,16 +70,43 @@ class YandexTurboPages{
 
         $resultText .= Rh::endTag('rss');
 
-        $this->saveCache($resultText);
+        if($this->cacheDir) {
+            $this->saveCache($resultText);
+        }
 
         return $resultText;
     }
 
     /**
      * Удаляет всю папку с кешем
+     * @param $clearByTime Проверяет сколько времени прошло с последнего изменения и удаляет кеш
      */
-    public function clearCache(){
+    public function clearCache($clearByTime=false){
+        if(!$this->cacheDir){
+            return $this;
+        }
 
+        $clearCache = false;
+
+        if($clearByTime && ((time()-filectime($this->getCacheFilePath())) > $this->cacheClearTime)){
+            $clearCache = true;
+        }
+
+        if(!$clearByTime){
+            $clearCache = true;
+        }
+
+        if(!$clearCache){
+            return $this;
+        }
+
+        $dir = new umiDirectory($this->getCacheDir());
+        if(!$dir->isExists()){
+            return $this;
+        }
+
+        $dir->deleteRecursively();
+        return $this;
     }
 
     /**
@@ -66,7 +115,8 @@ class YandexTurboPages{
      * @return bool
      */
     private function saveCache($text){
-        $file = $this->cacheDir.'/'.$this->cacheFileName;
+        umiDirectory::requireFolder($this->getCacheDir());
+        $file = $this->getCacheFilePath();
 
         file_put_contents($file, $text);
         return true;
@@ -77,13 +127,21 @@ class YandexTurboPages{
      * @return bool|false|string
      */
     private function getCache(){
-        $file = $this->cacheDir.'/'.$this->cacheFileName;
+        $file = $this->getCacheFilePath();
 
         if(!file_exists($file)){
             return false;
         }
 
         return file_get_contents($file);
+    }
+
+    public function getCacheDir(){
+        return CURRENT_WORKING_DIR.$this->cacheDir;
+    }
+
+    public function getCacheFilePath(){
+        return $this->getCacheDir().$this->cacheFileName;
     }
 
     /**
@@ -146,15 +204,26 @@ class YandexTurboPages{
     }
 
     private function generateContentItem($item){
+        /**
+         * @var $item umiHierarchyElement
+         */
 
         $r = Rh::beginTag('header');
         $r .= Rh::tag('h1', $item->h1);
 
-        $r .= Rh::beginTag('figure');
-        $r .= Rh::tag('img', null, ['src'=>'http://example.com/img.jpg']);
-        $r .= Rh::endTag('figure');
+        if($item->getModule() == 'content'){
+            $headerPic = $item->getValue('header_pic');
+        }
 
-        $r .= Rh::endTag('header');
+        if($item->getModule() == 'news' && $item->getMethod() == 'item'){
+            $headerPic = $item->getValue('anons_pic');
+        }
+
+        if($headerPic instanceof umiImageFile) {
+            $r .= Rh::beginTag('figure');
+            $r .= Rh::tag('img', null, ['src' =>$this->getDomainUrl().$headerPic->getFilePath(true)]);
+            $r .= Rh::endTag('figure');
+        }
 
         $r .= $this->generateMenu();
 
@@ -184,7 +253,7 @@ class YandexTurboPages{
             $r .= Rh::tag('a', $d['text'], ['href'=>$d['link']]);
         }
         $r .= Rh::endTag('menu');
-
+        return $r;
     }
 
     public function generateItems(){
@@ -195,10 +264,10 @@ class YandexTurboPages{
 
             $r .= Rh::beginTag('item', ['turbo' => 'true']);
 
-            $r .= Rh::tag('link', $item->link);
+            $r .= Rh::tag('link', $this->domainUrl.$item->link);
 
             $r .= Rh::beginTag('turbo:content');
-            $r .= $this->generateContentItem($item);
+            $r .= '<![CDATA[ '.$this->generateContentItem($item).' ]]>';
             $r .= Rh::endTag('turbo:content');
 
             $r .= Rh::endTag('item');
@@ -232,31 +301,13 @@ class YandexTurboPages{
         $this->callbackToGenerateContent = $callback;
         return $this;
     }
+
+    public function setDomainUrl($url){
+        $this->domainUrl = $url;
+        return $this;
+    }
+
+    public function getDomainUrl(){
+        return $this->domainUrl;
+    }
 }
-
-
-
-
-$ytp = (new YandexTurboPages())
-    ->setChannelData([
-        'title'=>'Title сайта',
-        'link'=>'http://example.ru',
-        'description'=>'Описание сайта'
-    ])
-    ->setCacheDir(__DIR__)
-    ->setFieldContent('content')
-    ->setMenu([
-        ['text'=>'Пункт меню первый', 'link'=>'#'],
-        ['text'=>'Пунтк меню второй', 'link'=>'#'],
-    ])
-    ->setItems([
-        (object)['content'=>'Текст страницы', 'h1'=>'Заголовок страницы', 'link'=>'http://example.ru/page.html']
-    ])
-    ->setContentGenerateCallback(function($item){
-
-
-        return "TEST CONTENT";
-    });
-
-
-echo $ytp->getRss();
