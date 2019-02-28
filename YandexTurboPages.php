@@ -35,7 +35,7 @@ class YandexTurboPages{
 
 
         $resultText = '<?xml version="1.0" encoding="UTF-8"?>';
-        $resultText .= ReketakaHelps::beginTag('rss', [
+        $resultText .= Rh::beginTag('rss', [
             'xmlns:yandex'=>'http://news.yandex.ru',
             'xmlns:media'=>'http://search.yahoo.com/mrss/',
             'xmlns:turbo'=>'http://turbo.yandex.ru',
@@ -44,7 +44,7 @@ class YandexTurboPages{
 
         $resultText .= $this->generateChanel();
 
-        $resultText .= ReketakaHelps::endTag('rss');
+        $resultText .= Rh::endTag('rss');
 
         $this->saveCache($resultText);
 
@@ -125,38 +125,38 @@ class YandexTurboPages{
     }
 
     private function generateChanel(){
-        $r = ReketakaHelps::beginTag('channel');
+        $r = Rh::beginTag('channel');
 
         foreach($this->channelData as $k=>$v){
             if(!$v){
                 continue;
             }
-            $r .= ReketakaHelps::tag($k, $v);
+            $r .= Rh::tag($k, $v);
         }
 
 
         $r .= $this->generateItems();
 
 
-        $r.= ReketakaHelps::endTag('channel');
+        $r.= Rh::endTag('channel');
 
         return $r;
     }
 
     private function generateContentItem($item = false){
 
-        $r = ReketakaHelps::beginTag('header');
-        $r .= ReketakaHelps::tag('h1', 'Заголовок страницы');
+        $r = Rh::beginTag('header');
+        $r .= Rh::tag('h1', 'Заголовок страницы');
 
-        $r .= ReketakaHelps::beginTag('figure');
-        $r .= ReketakaHelps::tag('img', null, ['src'=>'http://example.com/img.jpg']);
-        $r .= ReketakaHelps::endTag('figure');
+        $r .= Rh::beginTag('figure');
+        $r .= Rh::tag('img', null, ['src'=>'http://example.com/img.jpg']);
+        $r .= Rh::endTag('figure');
 
-        $r .= ReketakaHelps::endTag('header');
+        $r .= Rh::endTag('header');
 
         $r .= $this->generateMenu();
 
-        $r .= ReketakaHelps::endTag('header');
+        $r .= Rh::endTag('header');
 
         $r .= 'Конент';
 
@@ -172,11 +172,11 @@ class YandexTurboPages{
             return null;
         }
 
-        $r = ReketakaHelps::beginTag('menu');
+        $r = Rh::beginTag('menu');
         foreach($this->turboMenu as $d){
-            $r .= ReketakaHelps::tag('a', $d['text'], ['href'=>$d['link']]);
+            $r .= Rh::tag('a', $d['text'], ['href'=>$d['link']]);
         }
-        $r .= ReketakaHelps::endTag('menu');
+        $r .= Rh::endTag('menu');
 
     }
 
@@ -186,15 +186,15 @@ class YandexTurboPages{
 
 
 
-        $r .= ReketakaHelps::beginTag('item', ['turbo'=>'true']);
+        $r .= Rh::beginTag('item', ['turbo'=>'true']);
 
-        $r .= ReketakaHelps::tag('link', 'http://labmagic.ru');
+        $r .= Rh::tag('link', 'http://labmagic.ru');
 
-        $r .= ReketakaHelps::beginTag('turbo:content');
+        $r .= Rh::beginTag('turbo:content');
         $r .= $this->generateContentItem();
-        $r .= ReketakaHelps::endTag('turbo:content');
+        $r .= Rh::endTag('turbo:content');
 
-        $r .= ReketakaHelps::endTag('item');
+        $r .= Rh::endTag('item');
 
         return $r;
     }

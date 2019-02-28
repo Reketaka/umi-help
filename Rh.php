@@ -1,7 +1,7 @@
 <?php
 
 
-class ReketakaHelps{
+class Rh{
 
     private static function renderTagAttributes($attributes){
         if(empty($attributes)){
