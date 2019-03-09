@@ -35,5 +35,18 @@ class Rh{
 
         return "<".$tag.((($attrs = self::renderTagAttributes($attributes)) && !empty($attrs))?" ".$attrs:"").(is_null($content)?"/>":">") . $content . (is_null($content)?"":"</" . $tag . ">");
     }
+
+    public static function dump($v){
+        echo "<pre>";
+        var_Dump($v);
+        echo "</pre>";
+    }
+
+    public static function dd($v){
+        echo "<pre>";
+        var_Dump($v);
+        echo "</pre>";
+        exit();
+    }
 }
 
