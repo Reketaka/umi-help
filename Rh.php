@@ -48,5 +48,9 @@ class Rh{
         echo "</pre>";
         exit();
     }
+
+    public static function priceFormat($p){
+        return number_format($p, 2, '.', ' ');
+    }
 }
 
