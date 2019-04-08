@@ -3,6 +3,35 @@
 
 class Rh{
 
+    public static function getAttributeElement($id, $attr){
+
+        if(!$element = umiHierarchy::getInstance()->getElement($id)){
+            return null;
+        }
+
+        if(!$field = $element->getValue($attr)){
+            return null;
+        }
+
+        $value = $field;
+        if($field instanceof umiImageFile){
+            $value = $field->getFilePath(true);
+
+            $system = system_buildin_load('system');
+
+            if($image = $system->makeThumbnail(
+                $field->getFilePath(),
+                200
+            )){
+                return $image['src'];
+            }
+        }
+
+
+
+        return $value;
+    }
+
     private static function renderTagAttributes($attributes){
         if(empty($attributes)){
             return null;
