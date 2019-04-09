@@ -65,6 +65,23 @@ class Rh{
         return "<".$tag.((($attrs = self::renderTagAttributes($attributes)) && !empty($attrs))?" ".$attrs:"").(is_null($content)?"/>":">") . $content . (is_null($content)?"":"</" . $tag . ">");
     }
 
+    /**
+     * Возвращает umiHierarchyElement текущей корзины пользователя
+     * @return array
+     */
+    public static function getBasketElements(){
+        $emarket = cmsController::getInstance()->getModule("emarket");
+
+        $order = $emarket->getBasketOrder();
+        $elements = [];
+        foreach($order->getItems() as $orderItem){
+            $elements[] = $orderItem->getItemElement();
+        }
+
+
+        return $elements;
+    }
+
     public static function dump($v){
         echo "<pre>";
         var_Dump($v);
