@@ -95,6 +95,15 @@ class Rh{
         exit();
     }
 
+    /**
+     * Возвращает строку в которой остаются только цифры
+     * @param $var
+     * @return integer
+     */
+    public static function onlyNumbers($var){
+        return preg_replace("/[^0-9]/", '', $var);
+    }
+
     public static function priceFormat($p){
         return number_format($p, 2, '.', ' ');
     }
