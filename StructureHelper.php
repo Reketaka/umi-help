@@ -12,23 +12,36 @@ class StructureHelper{
          * @var $heirarchy umiHierarchy
          */
 
+        $element = false;
         if(isset($data['checkExist']) && ($data['checkExist'] instanceof \Closure) && ($element = $data['checkExist']())){
             echo "Страница уже была создана".PHP_EOL;
-            return $element;
+//            return $element;
         }
 
-        if (!$newElementId = $heirarchy->addElement($data['rootPageId'], $hierarchyTypeId, $data['title'], $data['title'], $data['typeId'])) {
-            return false;
+        if(!$element) {
+            if (!$newElementId = $heirarchy->addElement($data['rootPageId'], $hierarchyTypeId, $data['title'], $data['title'], $data['typeId'])) {
+                return false;
+            }
         }
+        /**
+         * @var $newElement umiHierarchyElement
+         */
 
         $permissions = permissionsCollection::getInstance();
-        $permissions->setDefaultPermissions($newElementId);
+        $permissions->setDefaultPermissions($element?$element->getId():$newElementId);
 
-        if (!$newElement = $heirarchy->getElement($newElementId)) {
-            return false;
+        if(!$element) {
+            if (!$newElement = $heirarchy->getElement($newElementId)) {
+                return false;
+            }
         }
 
-        $newElement->setValue('h1', $title);
+        if($element){
+            $newElement = $element;
+        }
+
+        $newElement->setvalue('title', $data['title']);
+        $newElement->setValue('h1', $data['title']);
         $newElement->setValue("publish_time", time());
         $newElement->setIsActive(true);
         $newElement->setIsVisible(true);
