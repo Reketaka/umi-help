@@ -406,5 +406,19 @@ class Rh{
         $r = implode(PHP_EOL, $r);
         return $r;
     }
+
+    /**
+     * Подключает ксс
+     * @param $includeCss
+     */
+    public static function includeCss($includeCss){
+        $t = null;
+        foreach($includeCss as $css):
+            $attributes = ['rel'=>'stylesheet', 'href'=>$css];
+            $t .= self::tag("link", null, $attributes).PHP_EOL;
+        endforeach;
+
+        return $t;
+    }
 }
 
