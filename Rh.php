@@ -420,5 +420,23 @@ class Rh{
 
         return $t;
     }
+
+    public static function getSortUrl($url, $fieldSort, $direction){
+        $urlData = parse_url($url);
+        $query = BaseArrayHelper::getValue($urlData, 'query', null);
+        parse_str($query, $query);
+
+        $query['sort_field'] = $fieldSort;
+        $query['sort_direction'] = $direction;
+
+//        self::dump($urlData);
+
+
+//        self::dump($query);
+
+
+        $newUrl = $urlData['path']."?".http_build_query($query);
+        return $newUrl;
+    }
 }
 
