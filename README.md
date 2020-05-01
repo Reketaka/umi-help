@@ -1,3 +1,20 @@
+css Emarket Cart
+```
+.steps-of-payment{display:flex;}
+.steps-of-payment .stepBox{display: inline-block;position: relative;flex-grow: 1;height: 38px;padding: 8px 0;margin-right: -3px;background-color: transparent;border-bottom: 2px solid #f0f0f0;border-top: 2px solid #f0f0f0;color: #a4a4a4;text-decoration: none;text-indent: 1%;}
+.steps-of-payment .stepBox.complete, .steps-of-payment .stepBox.active{background-color: #557da6;border-color: #557da6;color: #FFF;}
+.steps-of-payment .stepBox.complete .valueStep{color:#FFF;}
+.steps-of-payment .stepBox.active a{color:#FFF;}
+.steps-of-payment .stepBox .valueStep{text-align:center;}
+.steps-of-payment .stepBox.active:before, .steps-of-payment .stepBox.active:after{position: absolute;width: 0;height: 0;border-style: solid;z-index: 25;content: "";}
+.steps-of-payment .stepBox.active:before{top: -2px;right: -12px;border-width: 19.5px 0 19.5px 15px;border-color: transparent transparent transparent #557da6;}
+.steps-of-payment .stepBox.active:after{top: -1px;right: -12px;border-width: 18px 0 18px 14px;border-color: transparent transparent transparent #557da6;}
+.steps-of-payment .stepBox.complete::after, .steps-of-payment .stepBox.complete::before, .steps-of-payment .stepBox.active::after,.steps-of-payment .stepBox.active::before{border-color: transparent transparent transparent #557da6;}
+.steps-of-payment .stepBox.last{border-right:2px solid #f0f0f0;}
+.steps-of-payment .stepBox.last:before, .steps-of-payment .stepBox.last:after{display:none;}
+```
+
+
 Пример использования Yandex Turbo страниц
 ```
 permissions.php

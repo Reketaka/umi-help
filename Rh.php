@@ -1,6 +1,8 @@
 <?php
 
 
+use UmiCms\Classes\System\Exception\Handler\Base;
+
 class Rh{
 
     public static function getAttributeElement($id, $attr){
@@ -32,37 +34,18 @@ class Rh{
         return $value;
     }
 
-    private static function renderTagAttributes($attributes){
-        if(empty($attributes)){
-            return null;
-        }
-
-        $attributesText = null;
-        foreach($attributes as $key=>$val){
-            if(is_array($val)){
-                $attributesText .= $key . "='" . implode(" ", $val) . "' ";
-            }else{
-                $attributesText .= $key . "='" . $val . "' ";
-            }
-        }
-
-        $attributesText = substr($attributesText, 0, -1);
-        $attributesText = trim($attributesText);
-        return $attributesText;
-    }
-
     public static function beginTag($tag, $attributes=[]){
 
-        return "<" . $tag .((($attrs = self::renderTagAttributes($attributes)) && !empty($attrs))?" ".$attrs:"").">";
+        return BaseHtml::beginTag($tag, $attributes);
     }
 
     public static function endTag($tag){
-        return "</".$tag.">";
+        return BaseHtml::endTag($tag);
     }
 
     public static function tag($tag, $content = null, $attributes = []){
 
-        return "<".$tag.((($attrs = self::renderTagAttributes($attributes)) && !empty($attrs))?" ".$attrs:"").(is_null($content)?"/>":">") . $content . (is_null($content)?"":"</" . $tag . ">");
+        return BaseHtml::tag($tag, $content, $attributes);
     }
 
     /**
@@ -108,10 +91,60 @@ class Rh{
         return number_format($p, 2, '.', ' ');
     }
 
-    public static function renderEmarketSteps($variables){
-        if(array_key_exists('steps', $variables)){
-            $variables = $variables['steps'];
+    public static function renderContentMenu($items, $renderSubMenu = false, $addDropdownButton = false){
+        $attributes = [];
+        if($renderSubMenu){
+
+            if(in_array('active', BaseArrayHelper::getColumn($items['items'], 'status'))){
+                BaseHtml::addCssClass($attributes, 'active');
+            }
         }
+
+        echo BaseHtml::beginTag('ul', $attributes);
+
+        foreach($items['items'] as $itemData):
+
+            echo BaseHtml::beginTag('li');
+
+            $attributes = [];
+            $hasSubMenu = false;
+            if(array_key_exists('items', $itemData)){
+                $attributes['class'] = ['dropdown'];
+                $hasSubMenu = true;
+            }
+            $attributes['href'] = $itemData['link'];
+
+            if(BaseArrayHelper::getValue($itemData, 'status') == 'active'){
+                BaseHtml::addCssClass($attributes, 'active');
+            }
+
+
+            echo BaseHtml::beginTag('a', $attributes);
+            echo $itemData['text'];
+
+            if($hasSubMenu && $addDropdownButton){
+                echo BaseHtml::tag('button', null, ['type'=>'button', 'class'=>'dropdown-button']);
+            }
+
+            echo BaseHtml::endTag('a');
+
+            if($hasSubMenu){
+                self::renderContentMenu(['items'=>$itemData['items']], $renderSubMenu, $addDropdownButton);
+            }
+
+
+            echo BaseHtml::endTag('li');
+
+        endforeach;
+
+        echo BaseHtml::endTag('ul');
+    }
+
+    public static function renderEmarketSteps($var){
+        if(!$variables = BaseArrayHelper::getValue($var, 'data.steps', false)){
+            $variables = BaseArrayHelper::getValue($var, 'purchasing.steps', false);
+        }
+
         $text = null;
         $text .= Rh::beginTag('div', ['class'=>'steps-of-payment']);
         foreach($variables as $stepData):
@@ -142,13 +175,18 @@ class Rh{
         return $text;
     }
 
-    public static function renderOrderList($variables){
+    public static function renderOrderList($variables, $options = []){
         $orderList = array_key_exists('items', $variables)?$variables['items']:[];
 
         $emarket = cmsController::getInstance()->getModule('emarket');
         $umiOC = umiObjectsCollection::getInstance();
 
-        $t = self::beginTag('div', ['id'=>'con_tab_orders']);
+        $attributes = ['id'=>'con_tab_orders'];
+        if(array_key_exists('tabClass', $options)){
+            BaseHtml::addCssClass($attributes, $options['tabClass']);
+        }
+
+        $t = self::beginTag('div', $attributes);
 
             if(!$orderList):
                 $t .= "Вы не сделали не одного заказа";
@@ -228,6 +266,114 @@ class Rh{
         $t .= Rh::endTag('div');
 
         return $t;
+    }
+
+    public static function renderPagination($variables, $pagination){
+        $canShow = isset($variables['total']) &&
+        isset($variables['per_page']) &&
+        $variables['total'] > $variables['per_page'];
+
+        if(!$canShow){
+            return null;
+        }
+
+        echo BaseHtml::beginTag('nav');
+            echo BaseHtml::beginTag('ul', ['class'=>'pagination']);
+
+            $attributes = ['class'=>['page-item']];
+            if(!isset($pagination['tobegin_link'])){
+                BaseHtml::addCssClass($attributes, 'disabled');
+            }
+
+
+            echo BaseHtml::beginTag('li', $attributes);
+            if(!isset($pagination['tobegin_link'])){
+                echo BaseHtml::tag('span', "&laquo;", ['class'=>'page-link']);
+            }else{
+                echo BaseHtml::beginTag('a', ['class'=>['page-link'], 'href'=>$pagination['tobegin_link']['value']]);
+                echo BaseHtml::tag('span', "&laquo;");
+                echo BaseHtml::endTag('a');
+            }
+            echo BaseHtml::endTag('li');
+
+
+            foreach($pagination['items'] as $item):
+                $attributes = ['class'=>['page-item']];
+                if(BaseArrayHelper::getValue($item, 'is-active', false)){
+                    BaseHtml::addCssClass($attributes, 'active');
+                }
+                if(($item['page-num'] == 0) && (BaseArrayHelper::getValue($item, 'is-active', false))){
+                    BaseHtml::removeCssClass($attributes, 'active');
+                }
+
+                echo BaseHtml::beginTag('li', $attributes);
+                    echo BaseHtml::tag('a', $item['num'], ['class'=>'page-link', 'href'=>$item['link']]);
+                echo BaseHtml::endTag('li');
+            endforeach;
+
+
+            $attributes = ['class'=>['page-item']];
+            if(!isset($pagination['tonext_link'])){
+                BaseHtml::addCssClass($attributes, 'disabled');
+            }
+
+            echo BaseHtml::beginTag('li', $attributes);
+            if(!isset($pagination['tonext_link'])){
+                echo BaseHtml::tag('span', "&raquo;", ['class'=>'page-link']);
+            }else{
+                echo BaseHtml::beginTag('a', ['class'=>['page-link'], 'href'=>$pagination['tonext_link']['value']]);
+                echo BaseHtml::tag('span', "&raquo;");
+                echo BaseHtml::endTag('a');
+            }
+            echo BaseHtml::endTag('li');
+
+
+        echo BaseHtml::endTag('ul');
+        echo BaseHtml::endTag('nav');
+    }
+
+    /**
+     * @param $variables
+     * @param DemomarketPhpExtension $extension
+     * @return string|null
+     */
+    public static function renderBreadcrumbs($variables, $extension){
+        if(!$parentList = BaseArrayHelper::getValue($variables, 'parents')){
+            return null;
+        }
+
+        $attributes = ['class'=>'breadcrumbs-block'];
+        $t = self::beginTag('nav', $attributes);
+            $t .= self::beginTag('ol', ['class'=>'breadcrumb']);
+
+                foreach($parentList as $parent):
+                    $attributes = ['class'=>['breadcrumb-item']];
+                    $t .= self::beginTag('li', $attributes);
+
+                        $t .= self::tag('a', $parent->getName(), ['href'=>$extension->getPath($parent)]);
+
+                    $t .= self::endTag('li');
+                endforeach;
+
+                $t .= self::tag('li', $variables['page']->getName(), ['class'=>['breadcrumb-item', 'active']]);
+
+            $t .= self::endTag('ol');
+        $t .= self::endTag('nav');
+
+        return $t;
+    }
+
+    public static function getDiscount(umiHierarchyElement $product, $decimials = 0){
+        $price = $product->getValue('price');
+        $oldPrice = $product->getValue('old_price');
+
+        if(!$oldPrice){
+            return false;
+        }
+
+        return number_format((($price-$oldPrice)/$price)*100, $decimials, '.', ' ');
+
+
     }
 
     public static function insertSchema($data){
