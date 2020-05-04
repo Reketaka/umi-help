@@ -337,7 +337,7 @@ class Rh{
      * @param DemomarketPhpExtension $extension
      * @return string|null
      */
-    public static function renderBreadcrumbs($variables, $extension){
+    public static function renderBreadcrumbs($variables, $extension, $options = []){
         if(!$parentList = BaseArrayHelper::getValue($variables, 'parents')){
             return null;
         }
@@ -345,6 +345,12 @@ class Rh{
         $attributes = ['class'=>'breadcrumbs-block'];
         $t = self::beginTag('nav', $attributes);
             $t .= self::beginTag('ol', ['class'=>'breadcrumb']);
+
+                if($homeHtml = BaseArrayHelper::getValue($options, 'mainPage.html')){
+                    $t .= self::beginTag('li', ['class'=>['breadcrumb-item']]);
+                    $t .= self::tag('a', $homeHtml, ['href'=>'/']);
+                    $t .= self::endTag('li');
+                }
 
                 foreach($parentList as $parent):
                     $attributes = ['class'=>['breadcrumb-item']];
