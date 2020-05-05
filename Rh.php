@@ -228,6 +228,13 @@ class Rh{
                                         if ($paymentObject = $umiOC->getObject($order->getValue('payment_id'))):
                                             $t.=$paymentObject->getName();
                                         endif;
+                                        if($paymentStatus = $umiOC->getObject($order->getValue('payment_status_id'))):
+                                            $t .= self::beginTag('p');
+                                            $t .= self::tag('strong', $paymentStatus->getName());
+                                            $t .= self::endTag('p');
+                                        endif;
+
+
                                     $t .= self::endTag('td');
 
                                     $t .= self::tag('td', self::priceFormat($orderInfo['summary']['price']['actual']));
